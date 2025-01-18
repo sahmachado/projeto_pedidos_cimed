@@ -5,19 +5,51 @@ from tkinter import messagebox
 from datetime import date
 from PIL import Image, ImageTk
 
-itens = ['teste','teste2','teste3']
 
-def pesquisa(num_pedido,comprador):
-    num_pedido = int(num_pedido.get())
-    base = pd.read_excel('base teste.xlsx')
-   
-    resultado = base.loc[base['Pedido'] == num_pedido, 'Comprador'].values[0]
-    comprador.state = 'normal'
-    comprador.delete(0, tk.END)
-    comprador.insert(0,resultado)
-    comprador.state = 'readonly'    
+def ao_selecionar_item(event):
+    # Obter o valor selecionado
+    item_selecionado = item_combo.get()
+    print(f"Item selecionado: {item_selecionado}")
 
-def editar():
+def pesquisar_pedido(num_pedido_entry, comprador_entry, item_combo):
+    try:
+        # Obter o número do pedido inserido
+        num_pedido = int(num_pedido_entry.get())
+        
+        # Carregar a base de dados
+        base = pd.read_excel('base teste.xlsx')
+        
+        # Filtrar comprador com base no pedido
+        comprador_valor = base.loc[base['Pedido'] == num_pedido, 'Comprador']
+        if not comprador_valor.empty:
+            comprador_entry.config(state='normal')
+            comprador_entry.delete(0, tk.END)
+            comprador_entry.insert(0, comprador_valor.values[0])
+            comprador_entry.config(state='readonly')
+        else:
+            messagebox.showwarning("Aviso", "Pedido não encontrado.")
+            return
+        
+        # Filtrar os itens do pedido
+        itens = base.loc[base['Pedido'] == num_pedido, 'Item'].tolist()
+        
+        # Atualizar os valores da ComboBox
+        if itens:
+            item_combo['values'] = itens
+            item_combo.current(0)  # Selecionar o primeiro item automaticamente
+        else:
+            item_combo['values'] = ["Nenhum item encontrado"]
+            item_combo.set("Nenhum item encontrado")
+    
+    except ValueError:
+        messagebox.showerror("Erro", "Por favor, insira um número de pedido válido.")
+    except FileNotFoundError:
+        messagebox.showerror("Erro", "Arquivo 'base teste.xlsx' não encontrado.")
+    except Exception as e:
+        messagebox.showerror("Erro", f"Ocorreu um erro inesperado: {e}")
+
+
+def editar_pedido():
     pass
 def save_pedido():
     messagebox.showinfo("Salvar", "Pedido salvo com sucesso!")
@@ -27,6 +59,7 @@ def delete_pedido():
     messagebox.showerror("Excluir", "Pedido excluído!")
 
 def show_page(page):
+    global item_combo 
     for widget in content_frame.winfo_children():
         widget.destroy()
 
@@ -45,9 +78,12 @@ def show_page(page):
         fornecedor.grid(row=1, column=1, padx=5, pady=5,sticky='w')
 
         ttk.Label(content_frame, text='Item do Pedido', font=("Arial", 11),background='#DCDAD5').grid(row=2, column=0, sticky="w", padx=(15,5), pady=5)
-        item_combo = ttk.Combobox(content_frame, values=itens, width=18)
+        item_combo = ttk.Combobox(content_frame, width=18,)
+        item_combo['values'] = ["Nenhum item disponível"]
+        item_combo.set("Nenhum item disponível")
         item_combo.grid(row=2, column=1, padx=5, pady=5,sticky='w')
         item_combo.current(0)
+        item_combo.bind("<<ComboboxSelected>>", ao_selecionar_item)
 
         ttk.Label(content_frame, text='Material', font=("Arial", 11),background='#DCDAD5').grid(row=2, column=2, sticky="w", padx=(15,5), pady=5)
         material = ttk.Entry(content_frame, width=40,state="readonly")
@@ -70,8 +106,8 @@ def show_page(page):
         botoes_frame = ttk.Frame(content_frame)
         botoes_frame.grid(row=6, column=0, columnspan=4, pady=20)
 
-        ttk.Button(botoes_frame, text="Pesquisar", command=lambda: pesquisa(num_pedido,comprador), width=15).grid(row=0, column=0, padx=10)
-        ttk.Button(botoes_frame, text="Editar", command=editar, width=15).grid(row=0, column=1, padx=10)
+        ttk.Button(botoes_frame, text="Pesquisar", command=lambda: pesquisar_pedido(num_pedido,comprador,item_combo), width=15).grid(row=0, column=0, padx=10)
+        ttk.Button(botoes_frame, text="Editar", command=editar_pedido, width=15).grid(row=0, column=1, padx=10)
         ttk.Button(botoes_frame, text="Salvar", command=save_pedido, width=15,style='s.TButton').grid(row=0, column=2, padx=10)
         ttk.Button(botoes_frame, text="Cancelar", command=cancel_pedido, width=15).grid(row=0, column=3, padx=10)
         ttk.Button(botoes_frame, text="Excluir", command=delete_pedido, width=15).grid(row=0, column=4, padx=10)
@@ -109,8 +145,8 @@ def show_page(page):
         botoes_frame = ttk.Frame(content_frame)
         botoes_frame.grid(row=6, column=0, columnspan=4, pady=20)
 
-        ttk.Button(botoes_frame, text="Pesquisar", command=lambda: pesquisa(num_pedido,comprador), width=15).grid(row=0, column=0, padx=10)
-        ttk.Button(botoes_frame, text="Editar", command=editar, width=15).grid(row=0, column=1, padx=10)
+        ttk.Button(botoes_frame, text="Pesquisar", command=lambda: pesquisar_pedido(num_pedido,comprador,item_combo), width=15).grid(row=0, column=0, padx=10)
+        ttk.Button(botoes_frame, text="Editar", command=editar_pedido, width=15).grid(row=0, column=1, padx=10)
         ttk.Button(botoes_frame, text="Salvar", command=save_pedido, width=15,style='s.TButton').grid(row=0, column=2, padx=10)
         ttk.Button(botoes_frame, text="Cancelar", command=cancel_pedido, width=15).grid(row=0, column=3, padx=10)
         ttk.Button(botoes_frame, text="Excluir", command=delete_pedido, width=15).grid(row=0, column=4, padx=10)
