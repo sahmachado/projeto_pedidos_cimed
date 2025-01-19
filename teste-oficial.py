@@ -1,35 +1,48 @@
 import pandas as pd
 import tkinter as tk
 from tkinter import ttk
+import datetime as dt
 from tkinter import messagebox
-from datetime import date
 from PIL import Image, ImageTk
 
+def gerar_codigo(pedido,item):
+    if pedido[:2] == '45':
+        final_pedido = pedido[4:]
+    elif pedido[:2] == '46':
+        final_pedido = pedido[5:]
+    elif pedido[:2] == '43':
+        final_pedido = pedido[6:]
+    codigo = f'{final_pedido}{item}'
+
+    return codigo
 
 def ao_selecionar_item(event):
-    # Obter o valor selecionado
-    item_selecionado = item_combo.get()
-    print(f"Item selecionado: {item_selecionado}")
+    
+    base = pd.read_excel('base teste.xlsx',parse_dates=['Data de Remessa'])
+
+    codigo = gerar_codigo(num_pedido.get(),item_combo.get())
+
+    material_filto = base.loc[base['Codigo'] == int(codigo), 'Material']
+    material.config(state='normal')
+    material.delete(0, tk.END)
+    material.insert(0,material_filto.values[0])
+    material.config(state='readonly')
+
+    remessa_valor = base.loc[base['Codigo'] == int(codigo), 'Data de Remessa']
+    remessa.config(state='normal')
+    remessa.delete(0, tk.END)
+    remessa.insert(0, remessa_valor.iloc[0].strftime("%d/%m/%Y"))
+    remessa.config(state='readonly')
 
 def pesquisar_pedido(num_pedido_entry, comprador_entry, item_combo):
-    try:
+    
+    # try:
         # Obter o número do pedido inserido
         num_pedido = int(num_pedido_entry.get())
         
         # Carregar a base de dados
-        base = pd.read_excel('base teste.xlsx')
-        
-        # Filtrar comprador com base no pedido
-        comprador_valor = base.loc[base['Pedido'] == num_pedido, 'Comprador']
-        if not comprador_valor.empty:
-            comprador_entry.config(state='normal')
-            comprador_entry.delete(0, tk.END)
-            comprador_entry.insert(0, comprador_valor.values[0])
-            comprador_entry.config(state='readonly')
-        else:
-            messagebox.showwarning("Aviso", "Pedido não encontrado.")
-            return
-        
+        base = pd.read_excel('base teste.xlsx',parse_dates=['Data de Remessa'])
+
         # Filtrar os itens do pedido
         itens = base.loc[base['Pedido'] == num_pedido, 'Item'].tolist()
         
@@ -40,13 +53,49 @@ def pesquisar_pedido(num_pedido_entry, comprador_entry, item_combo):
         else:
             item_combo['values'] = ["Nenhum item encontrado"]
             item_combo.set("Nenhum item encontrado")
-    
-    except ValueError:
-        messagebox.showerror("Erro", "Por favor, insira um número de pedido válido.")
-    except FileNotFoundError:
-        messagebox.showerror("Erro", "Arquivo 'base teste.xlsx' não encontrado.")
-    except Exception as e:
-        messagebox.showerror("Erro", f"Ocorreu um erro inesperado: {e}")
+
+        # Filtrar comprador com base no pedido
+        comprador_valor = base.loc[base['Pedido'] == num_pedido, 'Comprador']
+        if not comprador_valor.empty:
+            comprador_entry.config(state='normal')
+            comprador_entry.delete(0, tk.END)
+            comprador_entry.insert(0, comprador_valor.values[0])
+            comprador_entry.config(state='readonly')
+        else:
+            messagebox.showwarning("Aviso", "Comprador não encontrado.")
+            return
+        
+        fornecedor_valor = base.loc[base['Pedido'] == num_pedido, 'Fornecedor']
+        if not fornecedor_valor.empty:
+            fornecedor.config(state='normal')
+            fornecedor.delete(0, tk.END)
+            fornecedor.insert(0, fornecedor_valor.values[0])
+            fornecedor.config(state='readonly')
+        else:
+            messagebox.showwarning("Aviso", "Fornecedor não encontrado.")
+            return
+
+        
+        # Encontrar primeiro item do pedido
+        codigo = gerar_codigo(str(num_pedido),itens[0])
+
+        material_filto = base.loc[base['Codigo'] == int(codigo), 'Material']
+        material.config(state='normal')
+        material.delete(0, tk.END)
+        material.insert(0,material_filto.values[0])
+
+        remessa_valor = base.loc[base['Codigo'] == int(codigo), 'Data de Remessa']
+        remessa.config(state='normal')
+        remessa.delete(0, tk.END)
+        remessa.insert(0, remessa_valor.iloc[0].strftime("%d/%m/%Y"))
+        remessa.config(state='readonly')
+
+    # except ValueError:
+    #     messagebox.showerror("Erro", "Por favor, insira um número de pedido válido.")
+    # except FileNotFoundError:
+    #     messagebox.showerror("Erro", "Arquivo 'base teste.xlsx' não encontrado.")
+    # except Exception as e:
+    #     messagebox.showerror("Erro", f"Ocorreu um erro inesperado: {e}")
 
 
 def editar_pedido():
@@ -59,7 +108,8 @@ def delete_pedido():
     messagebox.showerror("Excluir", "Pedido excluído!")
 
 def show_page(page):
-    global item_combo 
+    global num_pedido, material, item_combo, fornecedor,remessa,status,follow_up
+
     for widget in content_frame.winfo_children():
         widget.destroy()
 
@@ -92,7 +142,7 @@ def show_page(page):
         ttk.Label(content_frame, text='Data de Remessa', font=("Arial", 11),background='#DCDAD5').grid(row=3, column=0, sticky="w", padx=(15,5), pady=5)
         remessa = ttk.Entry(content_frame, width=20)
         remessa.grid(row=3, column=1, padx=5, pady=5,sticky='w')
-        remessa.insert(0, date.today().strftime("%d/%m/%Y"))
+        # remessa.insert(0, date.today().strftime("%d/%m/%Y"))
 
         ttk.Label(content_frame, text='Status', font=("Arial", 11),background='#DCDAD5').grid(row=3, column=2, sticky="w", padx=(15,5), pady=5)
         status = ttk.Entry(content_frame, width=20,state="readonly")
