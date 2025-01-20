@@ -1,26 +1,20 @@
 import tkinter as tk
 
-def printar_texto(event):
-    texto = texto2.get()
-    print(texto)
-
-def pesquisa():
-    texto = texto1.get()
-    texto2.delete(0, tk.END)  # Limpar texto anterior
-    texto2.insert(0, texto)
+def processar_entrada(event):
+    texto = entrada.get()
+    print(f"Texto digitado (Enter pressionado): {texto}")
+    # Aqui você pode adicionar o código para processar a entrada,
+    # como salvar em um arquivo, enviar para um banco de dados, etc.
 
 janela = tk.Tk()
+janela.title("Exemplo de Evento <Return>")
 
-texto1 = tk.Entry(janela)
-texto1.pack()
+entrada = tk.Entry(janela)
+entrada.bind("<Return>", processar_entrada)  # Associa o evento <Return> à função
+entrada.pack(padx=10, pady=10)
+entrada.focus_set() #Coloca o foco na entry automaticamente
 
-texto2 = tk.Entry(janela)
-texto2.pack()
-
-# Vamos usar o evento '<<Modified>>' para detectar quando o texto for alterado
-texto2.bind('<KeyRelease>', printar_texto)  # Aqui estamos associando a função com o KeyRelease.
-
-botao = tk.Button(text='cliquei aqui', command=pesquisa)
-botao.pack()
+mensagem = tk.Label(janela, text="Digite algo e pressione Enter:")
+mensagem.pack()
 
 janela.mainloop()
