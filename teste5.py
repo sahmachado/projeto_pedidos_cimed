@@ -1,20 +1,18 @@
-import tkinter as tk
+import ttkbootstrap as ttk 
+from ttkbootstrap.constants import * 
 
-def processar_entrada(event):
-    texto = entrada.get()
-    print(f"Texto digitado (Enter pressionado): {texto}")
-    # Aqui você pode adicionar o código para processar a entrada,
-    # como salvar em um arquivo, enviar para um banco de dados, etc.
+janela = ttk.Window(title="Minha Aplicação ttkbootstrap", themename="darkly")
 
-janela = tk.Tk()
-janela.title("Exemplo de Evento <Return>")
+botao = ttk.Button(janela, text="Botão Primary", bootstyle=PRIMARY)
+botao.pack(pady=5)
 
-entrada = tk.Entry(janela)
-entrada.bind("<Return>", processar_entrada)  # Associa o evento <Return> à função
-entrada.pack(padx=10, pady=10)
-entrada.focus_set() #Coloca o foco na entry automaticamente
+botao_sec = ttk.Button(janela, text="Botão Secondary", bootstyle=SECONDARY)
+botao_sec.pack(pady=5)
 
-mensagem = tk.Label(janela, text="Digite algo e pressione Enter:")
-mensagem.pack()
+botao_info = ttk.Button(janela, text="Botão Info", bootstyle=INFO)
+botao_info.pack(pady=5)
+
+label = ttk.Label(janela, text="Este é um label com ttkbootstrap", font=("Arial", 14))
+label.pack()
 
 janela.mainloop()

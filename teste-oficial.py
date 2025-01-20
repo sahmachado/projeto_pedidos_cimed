@@ -71,8 +71,8 @@ def ao_selecionar_item(event):
 def pesquisar_pedido():
     # try:
         # Obter o número do pedido inserido
-        num_pedido = int(num_pedido.get())
-        status_pedido = validar_pedido(num_pedido)
+        pedido = int(num_pedido.get())
+        status_pedido = validar_pedido( pedido)
         
         if status_pedido == 'pedido invalido':
             messagebox.showerror("Erro", "Por favor, insira um número de pedido válido.")
@@ -81,7 +81,7 @@ def pesquisar_pedido():
             base = pd.read_excel('base teste.xlsx',parse_dates=['Data de Remessa'])
 
             # Filtrar os itens do pedido
-            itens = base.loc[base['Pedido'] == num_pedido, 'Item'].tolist()
+            itens = base.loc[base['Pedido'] ==  pedido, 'Item'].tolist()
             
             # Atualizar os valores da ComboBox
             if itens:
@@ -92,7 +92,7 @@ def pesquisar_pedido():
                 item_combo.set("Nenhum item encontrado")
 
             # Filtrar comprador com base no pedido
-            comprador_valor = base.loc[base['Pedido'] == num_pedido, 'Comprador']
+            comprador_valor = base.loc[base['Pedido'] ==  pedido, 'Comprador']
             if not comprador_valor.empty:
                 comprador.config(state='normal')
                 comprador.delete(0, tk.END)
@@ -102,7 +102,7 @@ def pesquisar_pedido():
                 messagebox.showwarning("Aviso", "Comprador não encontrado.")
                 return
             
-            fornecedor_valor = base.loc[base['Pedido'] == num_pedido, 'Fornecedor']
+            fornecedor_valor = base.loc[base['Pedido'] ==  pedido, 'Fornecedor']
             if not fornecedor_valor.empty:
                 fornecedor.config(state='normal')
                 fornecedor.delete(0, tk.END)
@@ -113,7 +113,7 @@ def pesquisar_pedido():
                 return
             
             # Encontrar primeiro item do pedido
-            codigo = gerar_codigo(str(num_pedido),itens[0])
+            codigo = gerar_codigo(str( pedido),itens[0])
 
             material_filto = base.loc[base['Codigo'] == int(codigo), 'Material']
             material.config(state='normal')
@@ -224,7 +224,6 @@ def show_page(page):
         ttk.Label(content_frame, text='Data de Remessa', font=("Arial", 11),background='#DCDAD5').grid(row=4, column=0, sticky="w", padx=(15,5), pady=5)
         remessa = ttk.Entry(content_frame, width=20)
         remessa.grid(row=4, column=1, padx=5, pady=5,sticky='w')
-        # remessa.insert(0, date.today().strftime("%d/%m/%Y"))
 
         ttk.Label(content_frame, text='Status', font=("Arial", 11),background='#DCDAD5').grid(row=4, column=2, sticky="w", padx=(15,5), pady=5)
         status = ttk.Entry(content_frame, width=20,state="readonly")
@@ -238,7 +237,7 @@ def show_page(page):
         botoes_frame = ttk.Frame(content_frame)
         botoes_frame.grid(row=6, column=0, columnspan=4, pady=20)
 
-        ttk.Button(botoes_frame, text="Pesquisar", command=lambda: pesquisar_pedido, width=15).grid(row=0, column=0, padx=10)
+        ttk.Button(botoes_frame, text="Pesquisar", command=pesquisar_pedido, width=15).grid(row=0, column=0, padx=10)
         ttk.Button(botoes_frame, text="Editar", command=editar_pedido, width=15).grid(row=0, column=1, padx=10)
         ttk.Button(botoes_frame, text="Salvar", command=save_pedido, width=15,style='s.TButton').grid(row=0, column=2, padx=10)
         ttk.Button(botoes_frame, text="Cancelar", command=cancel_pedido, width=15).grid(row=0, column=3, padx=10)
@@ -246,7 +245,7 @@ def show_page(page):
     
     elif page == 'atrasados':
         
-        for i in range(5):  # 5 colunas no seu exemplo
+        for i in range(5): 
             content_frame.columnconfigure(i, weight=1)
 
             ttk.Label(content_frame, text='Pedido', font=("Arial", 11), background='#DCDAD5').grid(row=0, column=0, sticky="ew", padx=(15, 5), pady=(15, 5))
@@ -277,7 +276,7 @@ def show_page(page):
         botoes_frame = ttk.Frame(content_frame)
         botoes_frame.grid(row=6, column=0, columnspan=4, pady=20)
 
-        ttk.Button(botoes_frame, text="Pesquisar", command=lambda: pesquisar_pedido(num_pedido,comprador,item_combo), width=15).grid(row=0, column=0, padx=10)
+        ttk.Button(botoes_frame, text="Pesquisar", command=lambda: pesquisar_pedido, width=15).grid(row=0, column=0, padx=10)
         ttk.Button(botoes_frame, text="Editar", command=editar_pedido, width=15).grid(row=0, column=1, padx=10)
         ttk.Button(botoes_frame, text="Salvar", command=save_pedido, width=15,style='s.TButton').grid(row=0, column=2, padx=10)
         ttk.Button(botoes_frame, text="Cancelar", command=cancel_pedido, width=15).grid(row=0, column=3, padx=10)
@@ -285,7 +284,7 @@ def show_page(page):
 #---------------------------------------------------------------------estrutura da janela---------------------------------------------------------------------#
 
 janela = tk.Tk()
-janela.title("Pedidos")
+
 janela.title("Gestão de Pedidos")
 janela.geometry("1000x600")
 janela.configure(bg='#fff000')
