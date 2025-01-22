@@ -1,9 +1,38 @@
 import pandas as pd
+from openpyxl import load_workbook
 import tkinter as tk
 from tkinter import ttk
 import datetime as dt
 from tkinter import messagebox
 from PIL import Image, ImageTk
+
+def atualizar_pedido():
+    """Procura um valor na primeira coluna e retorna a linha."""
+    pedido = num_pedido.get()
+    print(pedido)
+    item = item_combo.get()
+    codigo = gerar_codigo(pedido,item)
+    print(codigo)
+    print(type(codigo))
+    if pedido != '':
+        if follow_up.cget("state") == "normal":
+            if follow_up.get() =='':
+                r =messagebox.askyesno('Follo-Up','O campo FOLLOW-UP es´ta vazio, deseja continuar?')
+                follow_up.focus_set()
+                if r == True:
+                    arquivo = load_workbook('base teste.xlsx')
+                    aba_atual = arquivo.active
+                    for linha, linha_dados in enumerate(aba_atual.iter_rows(min_row=1), start=1):
+                        if linha_dados[0].value == int(codigo): # Verifica apenas a primeira célula da linha
+                            aba_atual.cell(linha,column=5).value = comprador.get()
+                            aba_atual.cell(linha,column=6).value = remessa.get()
+                            aba_atual.cell(linha,column=8).value = follow_up.get()
+                            arquivo.save('base teste.xlsx')
+                            save_pedido
+        else:
+            messagebox.showwarning("Erro", "Habilite o modo edição")
+    else: 
+        messagebox.showwarning("Erro", "Insira um número de pedido para edição")
 
 def validar_pedido(pedido):
     pedido = str(pedido)
@@ -28,7 +57,7 @@ def gerar_codigo(pedido,item):
 
 def ao_selecionar_item(event):
     
-    base = pd.read_excel('base teste.xlsx',parse_dates=['Data de Remessa'])
+    base = pd.read_excel('base teste.xlsx', dtype={"Data de Remessa": "datetime64[ns]"})
 
     codigo = gerar_codigo(num_pedido.get(),item_combo.get())
 
@@ -39,12 +68,14 @@ def ao_selecionar_item(event):
     material.config(state='readonly')
 
     remessa_valor = base.loc[base['Codigo'] == int(codigo), 'Data de Remessa']
+    remessa_valor = dt.datetime.strptime(remessa_valor.iloc[0].strftime("%Y-%m-%d"), "%Y-%m-%d").date()
+    # remessa_valor = pd.to_datetime(remessa_valor, format="%Y-%m-%d")
     remessa.config(state='normal')
     remessa.delete(0, tk.END)
-    remessa.insert(0, remessa_valor.iloc[0].strftime("%d/%m/%Y"))
+    remessa.insert(0, remessa_valor.strftime("%d/%m/%Y"))
     remessa.config(state='readonly')
 
-    if remessa_valor.iloc[0].date() >= dt.date.today():
+    if remessa_valor >= dt.date.today():
         status.config(state='normal')
         status.delete(0, tk.END)
         status.insert(0, 'No Prazo')
@@ -122,12 +153,14 @@ def pesquisar_pedido():
             material.config(state='readonly')
 
             remessa_valor = base.loc[base['Codigo'] == int(codigo), 'Data de Remessa']
+            remessa_valor = dt.datetime.strptime(remessa_valor.iloc[0], "%d/%m/%Y").date()
+            remessa_valor = pd.to_datetime(remessa_valor, format="%Y-%m-%d")
             remessa.config(state='normal')
             remessa.delete(0, tk.END)
-            remessa.insert(0, remessa_valor.iloc[0].strftime("%d/%m/%Y"))
+            remessa.insert(0, remessa_valor.strftime("%d/%m/%Y"))
             remessa.config(state='readonly')
 
-            if remessa_valor.iloc[0].date() >= dt.date.today():
+            if remessa_valor.date() >= dt.date.today():
                 status.config(state='normal')
                 status.delete(0, tk.END)
                 status.insert(0, 'No Prazo')
@@ -160,12 +193,11 @@ def pesquisar_pedido():
 def editar_pedido():
     pedido = material.get()
     if pedido != '':
-        material.config(state='normal')
-        fornecedor.config(state='normal')
+        comprador.config(state='normal')
         remessa.config(state='normal')
-        status.config(state='normal')
         follow_up.config(state='normal')
-        modo_edicao['text'] = 'Modo Edição Ativado'
+        modo_edicao['text'] = 'Modo Edição'
+        messagebox.showinfo('Edição','Modo edição ativado')
     else: 
         messagebox.showwarning("Erro", "Insira um número de pedido para edição")
 
@@ -191,9 +223,11 @@ def show_page(page):
         widget.destroy()
 
     if page == "pedidos":
+        titulo = ttk.Label(content_frame, text='Consulta e Atualização de pedidos', font=("Arial", 15),background='#DCDAD5')
+        titulo.grid(row=0, column=1,sticky="nsew",columnspan=2, padx=(15,5), pady=(15, 5))
 
-        modo_edicao = ttk.Label(content_frame, text='', font=("Arial", 15),background='#DCDAD5')
-        modo_edicao.grid(row=0, column=0,columnspan=2,sticky="nsew", padx=(15,5), pady=(15, 5))
+        modo_edicao = ttk.Label(content_frame, text='', font=("Arial", 9),background='#DCDAD5',foreground='red')
+        modo_edicao.grid(row=0, column=0,sticky="w", padx=(15,5), pady=(15, 5))
 
         ttk.Label(content_frame, text='Nº do Pedido', font=("Arial", 11),background='#DCDAD5').grid(row=1, column=0, sticky="w", padx=(15,5), pady=(15, 5))
         num_pedido = ttk.Entry(content_frame, width=25)
@@ -239,7 +273,7 @@ def show_page(page):
 
         ttk.Button(botoes_frame, text="Pesquisar", command=pesquisar_pedido, width=15).grid(row=0, column=0, padx=10)
         ttk.Button(botoes_frame, text="Editar", command=editar_pedido, width=15).grid(row=0, column=1, padx=10)
-        ttk.Button(botoes_frame, text="Salvar", command=save_pedido, width=15,style='s.TButton').grid(row=0, column=2, padx=10)
+        ttk.Button(botoes_frame, text="Salvar", command=atualizar_pedido, width=15,style='s.TButton').grid(row=0, column=2, padx=10)
         ttk.Button(botoes_frame, text="Cancelar", command=cancel_pedido, width=15).grid(row=0, column=3, padx=10)
         ttk.Button(botoes_frame, text="Excluir", command=delete_pedido, width=15).grid(row=0, column=4, padx=10)
     
@@ -317,7 +351,7 @@ content_frame = ttk.Frame(janela, padding=20,style='C.TFrame')
 content_frame.grid(row=0, column=1, sticky='nsew')
 
 content_frame.columnconfigure(0, weight=1)  # Peso para a primeira coluna
-content_frame.columnconfigure(1, weight=1)  # Peso para a segunda coluna (ou mais, dependendo do seu layout)
+content_frame.columnconfigure(1, weight=2)  # Peso para a segunda coluna (ou mais, dependendo do seu layout)
 
 janela.grid_rowconfigure(0, weight=1)
 janela.grid_columnconfigure(1, weight=1)
