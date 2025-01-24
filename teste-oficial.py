@@ -6,6 +6,47 @@ import datetime as dt
 from tkinter import messagebox
 from PIL import Image, ImageTk
 
+class style:
+    def style():
+        style = ttk.Style()
+
+        style.theme_use('clam')
+        style.configure("Menu.TButton", padding=(10, 5), width=21, font=("Arial", 10), background='#ffcd00')
+        style.map("Menu.TButton", 
+                background=[("active", "#3883ba"), ("pressed", "#3883ba")],
+                foreground=[('active', 'white')])
+
+        style.configure('p.TButton',background='#333',foreground = 'white')
+        style.map('p.TButton',
+                background=[("active", "#0056b3"), ("pressed", "#0056b3")],
+                foreground=[('active', 'white')])
+        style.configure('ed.TButton',background='#333',foreground = 'white')
+        style.map('ed.TButton',
+                background=[("active", "#87CEEB"), ("pressed", "#87CEEB")],
+                foreground=[('active', 'black')])
+        style.configure('s.TButton',background='#333',foreground = 'white')
+        style.map('s.TButton',
+                background=[("active", "#1e7e34"), ("pressed", "#1e7e34")],
+                foreground=[('active', 'white')])
+        style.configure('c.TButton',background='#333',foreground = 'white')
+        style.map('c.TButton',
+                background=[("active", "#A9A9A9"), ("pressed", '#A9A9A9')],
+                foreground=[('active', 'black')])
+        style.configure('ex.TButton',background='#333',foreground = 'white')
+        style.map('ex.TButton',
+                background=[("active", "#bd2130"), ("pressed", "#bd2130")],
+                foreground=[('active', 'white')])
+
+        style.configure("ActiveMenu.TButton", padding=(10, 5), width=21, font=("Arial", 10), background='#00cccc')
+        style.map("ActiveMenu.TButton", 
+                background=[("active", "#3883ba"), ("pressed", "#3883ba")],
+                foreground=[('active', 'white')])
+
+        style.configure("MenuFrame.TFrame", background='#f0f0f0')
+        style.configure("TLabel", background="#f0f0f0")
+        style.configure("TEntry", padding=5)
+        style.configure('C.TFrame', background='#f0f0f0f0')
+
 class limpar_campos:
     def limpar_pesquisa():
         num_pedido.delete(0, tk.END)
@@ -135,7 +176,7 @@ class processarpedido:
                     messagebox.showerror("Erro", "Por favor, insira um número de pedido válido.")
                 else:
                     # Carregar a base de dados
-                    base = pd.read_excel('base teste.xlsx',parse_dates=['Data de Remessa'])
+                    base = pd.read_excel('base teste.xlsx',sheet_name='base',dtype = {"Data de Remessa": "datetime64[ns]", "Data do Pedido": "datetime64[ns]"})
 
                     # Filtrar os itens do pedido
                     itens_pedido = base.loc[base['Pedido'] ==  pedido, 'Item'].tolist()
@@ -160,7 +201,15 @@ class processarpedido:
                     else:
                         messagebox.showwarning("Aviso", "Comprador não encontrado.")
                         return
-                    
+
+                    criacao_valor = base.loc[base['Pedido'] ==  pedido, 'Data do Pedido']
+                    criacao_valor = dt.datetime.strptime(criacao_valor.iloc[0].strftime("%Y-%m-%d"), "%Y-%m-%d").date()
+                    criacao_valor = pd.to_datetime(criacao_valor, format="%Y-%m-%d")
+                    criacao.config(state='normal')
+                    criacao.delete(0, tk.END)
+                    criacao.insert(0, criacao_valor.strftime("%d/%m/%Y"))
+                    criacao.config(state='readonly')
+
                     fornecedor_valor = base.loc[base['Pedido'] ==  pedido, 'Fornecedor']
                     if not fornecedor_valor.empty:
                         fornecedor.config(state='normal')
@@ -181,8 +230,8 @@ class processarpedido:
                     material.config(state='readonly')
 
                     remessa_valor = base.loc[base['Codigo'] == int(float(codigo)), 'Data de Remessa']
-                    data_string = remessa_valor.iloc[0].strftime("%d/%m/%Y") # Formato desejado
-                    remessa_valor = dt.datetime.strptime(data_string, "%d/%m/%Y").date()
+                    remessa_valor = dt.datetime.strptime(remessa_valor.iloc[0].strftime("%Y-%m-%d"), "%Y-%m-%d").date()
+                    # remessa_valor = dt.datetime.strptime(remessa_valor, "%d/%m/%Y").date()
                     remessa_valor = pd.to_datetime(remessa_valor, format="%Y-%m-%d")
                     remessa.config(state='normal')
                     remessa.delete(0, tk.END)
@@ -264,33 +313,36 @@ class processarpedido:
 
 class paginas:
     def pagina_pedidos():
-        global num_pedido, material, item_combo, fornecedor,remessa,status,follow_up,modo_edicao,comprador
-
+        global num_pedido, material, item_combo, fornecedor,remessa,status,follow_up,modo_edicao,comprador,criacao
+        
         titulo = ttk.Label(content_frame, text='Consulta e Atualização de pedidos', font=("Arial", 15),background='#DCDAD5')
-        titulo.grid(row=0, column=1,sticky="nsew",columnspan=2, padx=(15,5), pady=(15, 5))
+        titulo.grid(row=0, column=1,columnspan=2, padx=(15,5), pady=(15, 5))
 
         modo_edicao = ttk.Label(content_frame, text='', font=("Arial", 9),background='#DCDAD5',foreground='red')
         modo_edicao.grid(row=0, column=0,sticky="w", padx=(15,5), pady=(15, 5))
 
         ttk.Label(content_frame, text='Nº do Pedido', font=("Arial", 11),background='#DCDAD5').grid(row=1, column=0, sticky="w", padx=(15,5), pady=(15, 5))
         num_pedido = ttk.Entry(content_frame, width=25)
-        num_pedido.grid(row=1, column=1, padx=5, pady=(15, 5),sticky='w',)
-        # num_pedido.bind("<Return>")  # Associa o evento <Return> à função
+        num_pedido.grid(row=1, column=1, padx=5, pady=(15, 5),sticky='w')
         num_pedido.focus_set() #Coloca
 
-        ttk.Label(content_frame, text='Comprador', font=("Arial", 11),background='#DCDAD5').grid(row=1, column=2, sticky="w", padx=(15,5), pady=(15, 5))
-        comprador = ttk.Entry(content_frame, width=25)
-        comprador.grid(row=1, column=3, padx=5, pady=(15, 5),sticky='w')
-
-        ttk.Label(content_frame, text='Fornecedor', font=("Arial", 11),background='#DCDAD5').grid(row=2, column=0, sticky="w", padx=(15,5), pady=5)
+        ttk.Label(content_frame, text='Fornecedor', font=("Arial", 11),background='#DCDAD5').grid(row=1, column=2, sticky="w", padx=(15,5), pady=5)
         fornecedor = ttk.Entry(content_frame, width=40,state="readonly")
-        fornecedor.grid(row=2, column=1, padx=5, pady=5,sticky='w')
+        fornecedor.grid(row=1, column=3, padx=5, pady=5,sticky='w')
+
+        ttk.Label(content_frame, text='Comprador', font=("Arial", 11),background='#DCDAD5').grid(row=2, column=0, sticky="w", padx=(15,5), pady=(15, 5))
+        comprador = ttk.Entry(content_frame, width=20)
+        comprador.grid(row=2, column=1, padx=5, pady=(15, 5),sticky='w')
+
+        ttk.Label(content_frame, text='Data de Criação', font=("Arial", 11),background='#DCDAD5').grid(row=2, column=2, sticky="w", padx=(15,5), pady=(15, 5))
+        criacao = ttk.Entry(content_frame, width=20)
+        criacao.grid(row=2, column=3, padx=5, pady=(15, 5),sticky='w')
 
         ttk.Label(content_frame, text='Item do Pedido', font=("Arial", 11),background='#DCDAD5').grid(row=3, column=0, sticky="w", padx=(15,5), pady=5)
-        item_combo = ttk.Combobox(content_frame, width=18,)
-        item_combo['values'] = ["Nenhum item disponível"]
-        item_combo.set("Nenhum item disponível")
-        item_combo.grid(row=3, column=1, padx=5, pady=5,sticky='w')
+        item_combo = ttk.Combobox(content_frame, width=19)
+        item_combo['values'] = ["Item Indisponivel"]
+        item_combo.set("Item Indisponivel")
+        item_combo.grid(row=3, column=1, padx=5, pady=5,sticky='nsw')
         item_combo.current(0)
         item_combo.bind("<<ComboboxSelected>>", processarpedido.ao_selecionar_item)
 
@@ -308,11 +360,11 @@ class paginas:
 
         ttk.Label(content_frame, text='Follow Up', font=("Arial", 11),background='#DCDAD5').grid(row=5, column=0, sticky="w", padx=(15,5), pady=5)
         follow_up = ttk.Entry(content_frame, width=40)
-        follow_up.grid(row=5, column=1,columnspan=3, padx=5, pady=5,sticky='w')
+        follow_up.grid(row=5, column=1,columnspan=1, padx=5, pady=5,sticky='nsew')
 
         # Botões com espaçamento controlado
         botoes_frame = ttk.Frame(content_frame)
-        botoes_frame.grid(row=6, column=0, columnspan=4, pady=20)
+        botoes_frame.grid(row=6, column=0, columnspan=5, pady=20)
 
         button.button(botoes_frame)
         
@@ -326,33 +378,8 @@ class paginas:
             ttk.Label(content_frame, text='Comprador', font=("Arial", 11), background='#DCDAD5').grid(row=0, column=3, sticky="ew", padx=(15, 5), pady=(15, 5))
             ttk.Label(content_frame, text='Data de Remessa', font=("Arial", 11), background='#DCDAD5').grid(row=0, column=4, sticky="ew", padx=(15, 5), pady=(15, 5))
 
-class button:
-    def button(botoes_frame):
-        ttk.Button(botoes_frame, text="Pesquisar", command=processarpedido.pesquisar_pedido, width=15).grid(row=0, column=0, padx=10)
-        ttk.Button(botoes_frame, text="Editar", command=processarpedido.editar_pedido, width=15).grid(row=0, column=1, padx=10)
-        ttk.Button(botoes_frame, text="Salvar", command=processarpedido.atualizar_pedido, width=15,style='s.TButton').grid(row=0, column=2, padx=10)
-        ttk.Button(botoes_frame, text="Cancelar", command=processarpedido.cancel_pedido, width=15).grid(row=0, column=3, padx=10)
-        ttk.Button(botoes_frame, text="Excluir", command=processarpedido.delete_pedido, width=15).grid(row=0, column=4, padx=10)
+    def pagina_cadastro():
 
-def show_page(page):
-    
-
-    for widget in content_frame.winfo_children():
-        widget.destroy()
-
-    if page == "pedidos":
-        paginas.pagina_pedidos()
-    
-    elif page == 'atrasados':
-        paginas.pagina_atrasados()
-
-    elif page == 'fornecedor':
-        pass
-    
-    elif page == 'realtorio':
-        pass
-    
-    elif page == 'cadastro':
         ttk.Label(content_frame, text='Nome do Fornecedor', font=("Arial", 11),background='#DCDAD5').grid(row=0, column=0, sticky="w", padx=(15,5), pady=(15, 5))
         fornecedor = ttk.Entry(content_frame, width=50)
         fornecedor.grid(row=0, column=1, padx=5, pady=(15, 5),sticky='w',)
@@ -373,45 +400,53 @@ def show_page(page):
         ttk.Button(botoes_frame, text="Salvar", command=processarpedido.save_pedido, width=15,style='s.TButton').grid(row=0, column=2, padx=10)
         ttk.Button(botoes_frame, text="Cancelar", command=processarpedido.cancel_pedido, width=15).grid(row=0, column=3, padx=10)
         ttk.Button(botoes_frame, text="Excluir", command=processarpedido.delete_pedido, width=15).grid(row=0, column=4, padx=10)
+
+    def pagina_follow_up():
+        pass
+
+class button:
+    def button(botoes_frame):
+        ttk.Button(botoes_frame, text="Pesquisar", command=processarpedido.pesquisar_pedido, width=15,style='p.TButton').grid(row=0, column=0, padx=10)
+        ttk.Button(botoes_frame, text="Editar", command=processarpedido.editar_pedido, width=15,style='ed.TButton').grid(row=0, column=1, padx=10)
+        ttk.Button(botoes_frame, text="Salvar", command=processarpedido.atualizar_pedido, width=15,style='s.TButton').grid(row=0, column=2, padx=10)
+        ttk.Button(botoes_frame, text="Cancelar", command=processarpedido.cancel_pedido, width=15,style='c.TButton').grid(row=0, column=3, padx=10)
+        ttk.Button(botoes_frame, text="Excluir", command=processarpedido.delete_pedido, width=15,style='ex.TButton').grid(row=0, column=4, padx=10)
+
+def show_page(page):
+    
+
+    for widget in content_frame.winfo_children():
+        widget.destroy()
+
+    if page == "pedidos":
+        paginas.pagina_pedidos()
+    
+    elif page == 'atrasados':
+        paginas.pagina_atrasados()
+
+    elif page == 'fornecedor':
+        pass
+    
+    elif page == 'realtorio':
+        pass
+    
+    elif page == 'cadastro':
+        paginas.pagina_cadastro()
 #---------------------------------------------------------------------estrutura da janela---------------------------------------------------------------------#
 
 janela = tk.Tk()
 
 janela.title("Gestão de Pedidos")
-janela.geometry("1000x600")
+janela.geometry("1050x650")
 janela.configure(bg='#fff000')
 janela.rowconfigure(0, weight=1)  # Permite que a linha 0 se expanda
 janela.columnconfigure(1, weight=1) # Permite que a coluna 1 se expanda
 
-style = ttk.Style()
-
-style.theme_use('clam')
-style.configure("Menu.TButton", padding=(10, 5), width=21, font=("Arial", 10), background='#ffcd00')
-style.map("Menu.TButton", 
-          background=[("active", "#3883ba"), ("pressed", "#3883ba")],
-          foreground=[('active', 'white')])
-
-style.configure('s.TButton',background='#7DFF00')
-style.map('s.TButton',
-          background=[("active", "#178017"), ("pressed", "#178017")],
-          foreground=[('active', 'white')])
-
-style.configure("ActiveMenu.TButton", padding=(10, 5), width=21, font=("Arial", 10), background='#00cccc')
-style.map("ActiveMenu.TButton", 
-          background=[("active", "#3883ba"), ("pressed", "#3883ba")],
-          foreground=[('active', 'white')])
-
-style.configure("MenuFrame.TFrame", background='#f0f0f0')
-style.configure("TLabel", background="#f0f0f0")
-style.configure("TEntry", padding=5)
-style.configure('C.TFrame', background='#f0f0f0f0')
-
-# content_frame = ttk.Frame(janela, padding=20,style='C.TFrame')
-# content_frame.grid(row=0, column=1, sticky='nsew')
-
 
 janela.grid_rowconfigure(0, weight=1)
 janela.grid_columnconfigure(1, weight=1)
+
+style.style()
 
 menu_frame = ttk.Frame(janela, width=200, padding=10, style="MenuFrame.TFrame")
 menu_frame.grid(row=0, column=0, sticky='ns')
@@ -429,12 +464,11 @@ if logo_tk:
     logo_label = ttk.Label(menu_frame, image=logo_tk, style="TLabel")
     logo_label.pack(pady=(0, 10))
 
-content_frame = ttk.Frame(janela,padding=20)
+content_frame = ttk.Frame(janela,padding=5)
 content_frame.grid(row=0, column=1, sticky='nsew')
 
-content_frame.columnconfigure(0, weight=1)  # Peso para a primeira coluna
-content_frame.columnconfigure(1, weight=1)  # Peso para a segunda coluna (ou mais, dependendo do seu layout)
-content_frame.columnconfigure(2, weight=1)  
+for i in range(5):
+    content_frame.columnconfigure(i, weight=1)
 
 janela.grid_rowconfigure(0, weight=1)
 janela.grid_columnconfigure(1, weight=1)
@@ -444,7 +478,8 @@ botoes_menu = [
     ("Pedidos Atrasados", "atrasados"),
     ("Consulta Por Fornecedor", "fornecedor"),
     ("Relatorio", "relatorio"),
-    ("Cadastro de Fornecedor", "cadastro")
+    ("Cadastro de Fornecedor", "cadastro"),
+    ('Envio de Follow-Up','follow_up')
 ]
 
 botao_ativo = None
@@ -466,5 +501,7 @@ for texto, pagina in botoes_menu:
     criar_botao(texto, pagina)
 
 show_page("pedidos")
+
+# ttk.Label(menu_frame,text='teste').pack(side = 'bottom')
 
 janela.mainloop()
