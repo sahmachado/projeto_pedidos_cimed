@@ -92,6 +92,7 @@ class processarpedido:
                                 arquivo.save('base teste.xlsx')
                                 limpar_campos.limpar_pesquisa()
                                 processarpedido.save_pedido
+                                break
             else:
                 messagebox.showwarning("Erro", "Habilite o modo edição")
         else: 
@@ -312,6 +313,20 @@ class processarpedido:
             messagebox.showwarning('Erro','Selecione um pedido')
 
 class processarFornecedor:
+    def atualizar_fornecedor():
+        fornecedor = razao_fornecedor.get()
+        nome = nome_fornecedor.get()
+        codigo = codigo_fornecedor.get()
+        email = email_fornecedor.get()
+        arquivo = load_workbook('base teste.xlsx')
+        aba_fornecedor = arquivo['fornecedores']
+        for linha, linha_dados in enumerate(aba_fornecedor.iter_rows(min_row=1), start=1):
+            if linha_dados[0].value == fornecedor:
+                aba_fornecedor.cell(linha,column=2).value = nome
+                aba_fornecedor.cell(linha,column=3).value = codigo
+                aba_fornecedor.cell(linha,column=4).value = email
+                break
+        arquivo.save('base teste.xlsx')
     
     def pesquisa_fornecedor():
         def preencher_campos(fornecedor,codigo,nome,email):
