@@ -313,6 +313,46 @@ class processarpedido:
             messagebox.showwarning('Erro','Selecione um pedido')
 
 class processarFornecedor:
+    def cancelar_edicao():
+        razao_fornecedor.config(state='readonly')
+        nome_fornecedor.config(state='normal')
+        codigo_fornecedor.config(state='normal')
+        email_fornecedor.config(state='readonly')
+        modo_edicao['text'] = ''
+
+    def editar_fornecedor():
+        if razao_fornecedor.get() =='':
+            messagebox.showwarning('Erro',"Selecione um fornecedor para edição dos dados")
+        else:
+            razao_fornecedor.config(state='normal')
+            nome_fornecedor.config(state='normal')
+            codigo_fornecedor.config(state='normal')
+            email_fornecedor.config(state='normal')
+            modo_edicao['text'] = 'Modo Edição'
+
+    def validação_cadastro():
+        razao = razao_fornecedor.get()
+        nome =  nome_fornecedor.get()
+        codigo =  codigo_fornecedor.get()
+        email =  email_fornecedor.get()
+
+        if not razao:
+            messagebox.showerror('Erro','Preencha o campo Razão')
+        elif not nome:
+            messagebox.showerror('Erro','Preencha o campo Nome')
+        elif not codigo or len(str(codigo)) != 6:
+            if not codigo:
+                messagebox.showerror('Erro','Preencha o campo Codigo')
+            elif len(str(codigo)) != 6:
+                messagebox.showerror('Erro','O codigo deve conter 6 digitos')
+        elif not email or not '@' in email or not '.com' in email:
+            if not email:
+                messagebox.showerror('Erro','Preencha o campo Email')
+            elif not '@' in email or not '.com' in email:
+                messagebox.showerror('Erro','Email inválido')
+        else:
+            return True
+
     def atualizar_fornecedor():
         fornecedor = razao_fornecedor.get()
         nome = nome_fornecedor.get()
@@ -323,10 +363,28 @@ class processarFornecedor:
         for linha, linha_dados in enumerate(aba_fornecedor.iter_rows(min_row=1), start=1):
             if linha_dados[0].value == fornecedor:
                 aba_fornecedor.cell(linha,column=2).value = nome
-                aba_fornecedor.cell(linha,column=3).value = codigo
+                aba_fornecedor.cell(linha,column=3).value = int(codigo)
                 aba_fornecedor.cell(linha,column=4).value = email
                 break
         arquivo.save('base teste.xlsx')
+        messagebox.showinfo('Atualização', 'Cadastro atualizado com sucesso')
+        processarFornecedor.limpar_campos()
+        processarFornecedor.cancelar_edicao()
+
+    def cadastrar_fornecedor():
+        validacao = processarFornecedor.validação_cadastro()
+        if validacao == True:
+            base = load_workbook('base teste.xlsx')
+
+            aba_fornecedor = base['fornecedores']
+            ultima_linha = len(aba_fornecedor['A'])+1
+            aba_fornecedor.cell(ultima_linha,column=1).value = razao_fornecedor.get()
+            aba_fornecedor.cell(ultima_linha,column=2).value = nome_fornecedor.get()
+            aba_fornecedor.cell(ultima_linha,column=3).value = int(codigo_fornecedor.get())
+            aba_fornecedor.cell(ultima_linha,column=4).value = email_fornecedor.get()
+            base.save('base teste.xlsx')
+            texto = (f"Fornecedor {nome_fornecedor.get()} cadastrado com sucesso")
+            messagebox.showinfo('Cadastro',texto)
     
     def pesquisa_fornecedor():
         def preencher_campos(fornecedor,codigo,nome,email):
@@ -374,13 +432,12 @@ class processarFornecedor:
     def limpar_campos():
         razao_fornecedor.config(state='normal')
         razao_fornecedor.delete(0, tk.END)
-        razao_fornecedor.config(state='readonly')
+        razao_fornecedor.config(state='normal')
         codigo_fornecedor.delete(0, tk.END)
         nome_fornecedor.delete(0, tk.END)
         email_fornecedor.config(state='normal')
         email_fornecedor.delete(0, tk.END)
-        email_fornecedor.config(state='readonly')
-
+        email_fornecedor.config(state='normal')
 
 class paginas:
     def pagina_pedidos():
@@ -433,9 +490,15 @@ class paginas:
         follow_up = ttk.Entry(content_frame, width=40)
         follow_up.grid(row=5, column=1,columnspan=1, padx=5, pady=5,sticky='nsew')
 
+        editar_massa = ttk.Checkbutton(content_frame,text='Editar pedido completo')
+        editar_massa.grid(row=6,column=1,sticky='w')
+
+        editar_massa = ttk.Checkbutton(content_frame,text='Excluir pedido completo')
+        editar_massa.grid(row=7,column=1,sticky='w')
+
         # Botões com espaçamento controlado
         botoes_frame = ttk.Frame(content_frame)
-        botoes_frame.grid(row=6, column=0, columnspan=5, pady=20)
+        botoes_frame.grid(row=8, column=0, columnspan=5, pady=20)
 
         button.button_pedido(botoes_frame)
         
@@ -450,31 +513,38 @@ class paginas:
             ttk.Label(content_frame, text='Data de Remessa', font=("Arial", 11), background='#DCDAD5').grid(row=0, column=4, sticky="ew", padx=(15, 5), pady=(15, 5))
 
     def pagina_cadastro():
-        global razao_fornecedor,codigo_fornecedor,nome_fornecedor,email_fornecedor
+        global razao_fornecedor,codigo_fornecedor,nome_fornecedor,email_fornecedor,modo_edicao
 
-        ttk.Label(content_frame, text='Razão Social', font=("Arial", 11),background='#DCDAD5').grid(row=0, column=0, sticky="w", padx=(15,5), pady=(15, 5))
-        razao_fornecedor = ttk.Entry(content_frame, width=50,state='readonly')
-        razao_fornecedor.grid(row=0, column=1, padx=5, pady=(15, 5),sticky='w',)
+        titulo = ttk.Label(content_frame, text='Cadastro e Consulta de Fornecedores', font=("Arial", 15),background='#DCDAD5')
+        titulo.grid(row=0, column=1,columnspan=2, padx=(15,5), pady=(15, 5))
 
-        ttk.Label(content_frame, text='Código SAP', font=("Arial", 11),background='#DCDAD5').grid(row=0, column=2, sticky="w", padx=(15,5), pady=(15, 5))
+        modo_edicao = ttk.Label(content_frame, text='', font=("Arial", 9),background='#DCDAD5',foreground='red')
+        modo_edicao.grid(row=0, column=0,sticky="w", padx=(15,5), pady=(15, 5))
+
+        ttk.Label(content_frame, text='Razão Social', font=("Arial", 11),background='#DCDAD5').grid(row=1, column=0, sticky="w", padx=(15,5), pady=(15, 5))
+        razao_fornecedor = ttk.Entry(content_frame, width=50)
+        razao_fornecedor.grid(row=1, column=1, padx=5, pady=(15, 5),sticky='w',)
+
+        ttk.Label(content_frame, text='Código SAP', font=("Arial", 11),background='#DCDAD5').grid(row=1, column=2, sticky="w", padx=(15,5), pady=(15, 5))
         codigo_fornecedor = ttk.Entry(content_frame, width=20)
-        codigo_fornecedor .grid(row=0, column=3, padx=5, pady=(15, 5),sticky='w',)
+        codigo_fornecedor .grid(row=1, column=3, padx=5, pady=(15, 5),sticky='w',)
 
-        ttk.Label(content_frame, text='Nome do Fornecedor', font=("Arial", 11),background='#DCDAD5').grid(row=1, column=0, sticky="w", padx=(15,5), pady=(15, 5))
+        ttk.Label(content_frame, text='Nome do Fornecedor', font=("Arial", 11),background='#DCDAD5').grid(row=2, column=0, sticky="w", padx=(15,5), pady=(15, 5))
         nome_fornecedor = ttk.Entry(content_frame, width=30)
-        nome_fornecedor.grid(row=1, column=1, padx=5, pady=(15, 5),sticky='w',)
+        nome_fornecedor.grid(row=2, column=1, padx=5, pady=(15, 5),sticky='w',)
 
-        ttk.Label(content_frame, text='E-mail Fornecedor', font=("Arial", 11),background='#DCDAD5').grid(row=2, column=0, sticky="w", padx=(15,5), pady=(15, 5))
-        email_fornecedor = ttk.Entry(content_frame, width=50,state='readonly')
-        email_fornecedor.grid(row=2, column=1, padx=5, pady=(15, 5),sticky='w',)
+        ttk.Label(content_frame, text='E-mail Fornecedor', font=("Arial", 11),background='#DCDAD5').grid(row=3, column=0, sticky="w", padx=(15,5), pady=(15, 5))
+        email_fornecedor = ttk.Entry(content_frame, width=50)
+        email_fornecedor.grid(row=3, column=1, padx=5, pady=(15, 5),sticky='w',)
     
         botoes_frame = ttk.Frame(content_frame)
-        botoes_frame.grid(row=6, column=0, columnspan=4, pady=20)
+        botoes_frame.grid(row=6, column=0, columnspan=5, pady=15)
 
         button.button_fornecedor(botoes_frame)
 
     def pagina_follow_up():
-        pass
+        arquivo = ttk.__loader__()
+        arquivo.pack()
 
 class button:
     def button_pedido(botoes_frame):
@@ -486,10 +556,11 @@ class button:
     
     def button_fornecedor(botoes_frame):
         ttk.Button(botoes_frame, text="Pesquisar", command=processarFornecedor.pesquisa_fornecedor, width=15,style='p.TButton').grid(row=0, column=0, padx=10)
-        ttk.Button(botoes_frame, text="Editar", command=processarpedido.editar_pedido, width=15,style='ed.TButton').grid(row=0, column=1, padx=10)
-        ttk.Button(botoes_frame, text="Salvar", command=processarpedido.save_pedido, width=15,style='s.TButton').grid(row=0, column=2, padx=10)
-        ttk.Button(botoes_frame, text="Cancelar", command=processarpedido.cancel_pedido, width=15,style='c.TButton').grid(row=0, column=3, padx=10)
-        ttk.Button(botoes_frame, text="Limpar", command=processarFornecedor.limpar_campos, width=15,style='ex.TButton').grid(row=0, column=4, padx=10)
+        ttk.Button(botoes_frame, text="Editar", command= processarFornecedor.editar_fornecedor, width=15,style='ed.TButton').grid(row=0, column=1, padx=10)
+        ttk.Button(botoes_frame, text="Salvar", command=processarFornecedor.atualizar_fornecedor, width=15,style='s.TButton').grid(row=0, column=2, padx=10)
+        ttk.Button(botoes_frame, text="Cadastrar", command=processarFornecedor.cadastrar_fornecedor, width=15,style='s.TButton').grid(row=0, column=3, padx=10)
+        ttk.Button(botoes_frame, text="Cancelar", command=processarFornecedor.cancelar_edicao, width=15,style='c.TButton').grid(row=0, column=4, padx=10)
+        ttk.Button(botoes_frame, text="Limpar", command=processarFornecedor.limpar_campos, width=15,style='ex.TButton').grid(row=0, column=5, padx=10)
 
 def show_page(page):
     
@@ -520,7 +591,6 @@ janela.geometry("1050x650")
 janela.configure(bg='#fff000')
 janela.rowconfigure(0, weight=1)  # Permite que a linha 0 se expanda
 janela.columnconfigure(1, weight=1) # Permite que a coluna 1 se expanda
-
 
 janela.grid_rowconfigure(0, weight=1)
 janela.grid_columnconfigure(1, weight=1)
