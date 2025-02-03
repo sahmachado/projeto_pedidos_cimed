@@ -1,10 +1,11 @@
 import pandas as pd
-from openpyxl import load_workbook
 import tkinter as tk
-from tkinter import ttk
 import datetime as dt
+from tkinter import ttk
+from datetime import datetime
 from tkinter import messagebox
 from PIL import Image, ImageTk
+from openpyxl import load_workbook
 
 class style:
     def style():
@@ -69,7 +70,7 @@ class limpar_campos:
         follow_up.config(state='normal')
         follow_up.delete(0, tk.END)
         follow_up.config(state='readonly')
-        
+
 class processarpedido:
     def atualizar_pedido():
         """Procura um valor na primeira coluna e retorna a linha."""
@@ -184,6 +185,7 @@ class processarpedido:
                     itens = []
                     for item in itens_pedido:
                         itens.append(int(float(item)))
+                    itens.sort()
                     # Atualizar os valores da ComboBox
                     if itens:
                         item_combo['values'] = itens
@@ -293,24 +295,60 @@ class processarpedido:
         messagebox.showwarning("Cancelar", "Operação cancelada!")
 
     def delete_pedido():
+        def excluir(codigo):
+            arquivo = load_workbook('base teste.xlsx')
+            aba_atual = arquivo.active
+            for linha, linha_dados in enumerate(aba_atual.iter_rows(min_row=1), start=1):
+                if linha_dados[0].value == int(codigo): 
+                    aba_atual.delete_rows(linha)
+                    break
+            arquivo.save('base teste.xlsx')
 
-        arquivo = load_workbook('base teste.xlsx')
-        aba_atual = arquivo.active
+        base = pd.read_excel('base teste.xlsx',sheet_name='base',dtype = {"Data de Remessa": "datetime64[ns]", "Data do Pedido": "datetime64[ns]"})
         pedido = num_pedido.get()
         item = item_combo.get()
         codigo = processarpedido.gerar_codigo(pedido,item)
+
         if pedido != '':
-            r =messagebox.askyesno('Excluir',f'Deseja excluir o item {item} do pedido {pedido}?')
-            if r == True:
-                arquivo = load_workbook('base teste.xlsx')
-                aba_atual = arquivo.active
-                for linha, linha_dados in enumerate(aba_atual.iter_rows(min_row=1), start=1):
-                    if linha_dados[0].value == int(codigo): 
-                        aba_atual.delete_rows(linha)
-                        arquivo.save('base teste.xlsx')
-                        messagebox.showerror("Excluir", "Pedido excluído!")
+            if var.get():
+                itens_pedido = base.loc[base['Pedido'] ==  int(pedido), 'Item'].tolist()
+                itens = []
+                for item in itens_pedido:
+                    itens.append(int(float(item)))
+                itens.sort()
+                r =messagebox.askyesno('Excluir',f'Deseja excluir o pedido {pedido}?')
+                if r == True:
+                    for item in itens:
+                        codigo = processarpedido.gerar_codigo(pedido,item)
+                        excluir(codigo)
+                    messagebox.showerror("Excluir", "Excluído com sucesso!")
+            else:
+                r =messagebox.askyesno('Excluir',f'Deseja excluir o item {item} do pedido {pedido}?')
+                if r == True:
+                    excluir(codigo)
+                    messagebox.showerror("Excluir", "Excluído com sucesso!")
+            processarpedido.limpar_campos()
         else:
             messagebox.showwarning('Erro','Selecione um pedido')
+
+    def limpar_campos():
+        campos = {
+        'num_pedido': num_pedido,
+        'material': material,
+        'item_combo': item_combo,
+        'fornecedor': fornecedor,
+        'remessa': remessa,
+        'status': status,
+        'follow_up': follow_up,
+        'comprador': comprador,
+        'criacao': criacao
+    }
+        for campo in campos.values():
+            campo.config(state='normal')
+            campo.delete(0, tk.END)
+            campo.config(state='readonly')
+        num_pedido.config(state='normal')
+        item_combo.config(state='normal')
 
 class processarFornecedor:
     def cancelar_edicao():
@@ -441,7 +479,7 @@ class processarFornecedor:
 
 class paginas:
     def pagina_pedidos():
-        global num_pedido, material, item_combo, fornecedor,remessa,status,follow_up,modo_edicao,comprador,criacao
+        global num_pedido, material, item_combo, fornecedor,remessa,status,follow_up,modo_edicao,comprador,criacao,var
         
         titulo = ttk.Label(content_frame, text='Consulta e Atualização de pedidos', font=("Arial", 15),background='#DCDAD5')
         titulo.grid(row=0, column=1,columnspan=2, padx=(15,5), pady=(15, 5))
@@ -493,8 +531,9 @@ class paginas:
         editar_massa = ttk.Checkbutton(content_frame,text='Editar pedido completo')
         editar_massa.grid(row=6,column=1,sticky='w')
 
-        editar_massa = ttk.Checkbutton(content_frame,text='Excluir pedido completo')
-        editar_massa.grid(row=7,column=1,sticky='w')
+        var = tk.BooleanVar()
+        excluir_massa = ttk.Checkbutton(content_frame,variable=var,text='Excluir pedido completo')
+        excluir_massa.grid(row=7,column=1,sticky='w')
 
         # Botões com espaçamento controlado
         botoes_frame = ttk.Frame(content_frame)
@@ -651,6 +690,6 @@ for texto, pagina in botoes_menu:
 
 show_page("pedidos")
 
-# ttk.Label(menu_frame,text='teste').pack(side = 'bottom')
+#ttk.Label(menu_frame,text=datetime.today().strftime('%d/%m/%Y')).pack(side = 'bottom')
 
 janela.mainloop()

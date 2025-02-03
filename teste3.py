@@ -1,25 +1,30 @@
 import pandas as pd
+from datetime import datetime, timedelta
+import tkinter as tk
+from tkinter import ttk
 
-base = pd.read_excel('base teste.xlsx')
+def carregar_planilha(caminho):
+    # Carrega a planilha
+    df = pd.read_excel(caminho, sheet_name='base')
+    return df
 
-pedido = 4600055981
+def fornecedores_com_follow_up(df):
+    # Filtra fornecedores com itens para follow-up dentro do prazo de 10 dias
+    df['Data de Remessa'] = pd.to_datetime(df['Data de Remessa'], errors='coerce')
+    hoje = datetime.today()
+    prazo_limite = hoje + timedelta(days=10)
+    df_filtrado = df[(df['Data de Remessa'] <= prazo_limite) & (df['Data de Remessa'] >= hoje)]
+    return df_filtrado['Fornecedor'].unique()
 
-itens_pedido = base.loc[base['Pedido'] == pedido, 'Item'].tolist()
+janela = tk.Tk()
 
-pedido = str(pedido)
-if pedido[:2] == '45':
-    final_pedido = pedido[4:]
-elif pedido[:2] == '46':
-    final_pedido = pedido[5:]
-elif pedido[:2] == '43':
-    final_pedido = pedido[6:]
-else:
-    final_pedido = None  # ou trate o caso em que o pedido não é reconhecido
+caminho_arquivo = "base teste.xlsx"
+df = carregar_planilha(caminho_arquivo)
 
-texto = ''
-if final_pedido is not None:
-    for item in itens_pedido:
-        codigo = f'{final_pedido}{item}'
-        material =  base.loc[base['Codigo'] == int(codigo), 'Material']
-        texto += f'{pedido}: Item {item} - {material.values[0]}\n'
-print(texto)
+fornecedores = fornecedores_com_follow_up(df)
+fornecedores = fornecedores.tolist()
+
+forn = ttk.Combobox(janela,values=fornecedores,width=100)
+forn.grid(column=0,row=0)
+
+janela.mainloop()

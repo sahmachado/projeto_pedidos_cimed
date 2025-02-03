@@ -1,51 +1,51 @@
-import tkinter as tk
-import tkinter.ttk as ttk
-from PIL import Image, ImageTk  # Importe as bibliotecas PIL
+import pandas as pd
+from datetime import datetime, timedelta
 
-root = tk.Tk()
+def carregar_planilha(caminho):
+    # Carrega a planilha
+    df = pd.read_excel(caminho, sheet_name='base')
+    return df
 
-# Frame para o menu lateral
-menu_frame = tk.Frame(root, width=200, bg='#ffcd00') # Largura fixa para o menu
-menu_frame.grid(row=0, column=0, sticky='ns')
+def fornecedores_com_follow_up(df):
+    # Filtra fornecedores com itens para follow-up dentro do prazo de 10 dias
+    df['Data de Remessa'] = pd.to_datetime(df['Data de Remessa'], errors='coerce')
+    hoje = datetime.today()
+    prazo_limite = hoje + timedelta(days=10)
+    df_filtrado = df[(df['Data de Remessa'] <= prazo_limite) & (df['Data de Remessa'] >= hoje)]
+    return df_filtrado['Fornecedor'].unique()
 
-# Frame para o conteúdo principal
-content_frame = tk.Frame(root)
-content_frame.grid(row=0, column=1, sticky='nsew') # Expande para preencher o resto
+def filtrar_materiais_por_fornecedor(df, fornecedor):
+    # Filtra os materiais com base no fornecedor selecionado e prazo de entrega
+    df['Data de Remessa'] = pd.to_datetime(df['Data de Remessa'], errors='coerce')
+    hoje = datetime.today()
+    prazo_limite = hoje + timedelta(days=10)
+    df_filtrado = df[(df['Fornecedor'] == fornecedor) & (df['Data de Remessa'] <= prazo_limite) & (df['Data de Remessa'] >= hoje)]
+    return df_filtrado
 
-root.grid_rowconfigure(0, weight=1)
-root.grid_columnconfigure(1, weight=1)
+def gerar_texto_follow_up(df_filtrado):
+    texto = ""
+    for _, row in df_filtrado.iterrows():
+        pedido = row['Pedido']
+        item = row['Item']
+        material = row['Material']
+        texto += f'{pedido}: Item {item} - {material}\n'
+    return texto
 
-# Funções para mostrar as páginas
-def show_page(page):
-    for widget in content_frame.winfo_children():
-        widget.destroy() # Limpa o frame de conteúdo
-
-    if page == "pedidos":
-        label = tk.Label(content_frame, text="Conteúdo da página de Pedidos")
-        label.pack()
-        # Adicione aqui os widgets específicos para a página de pedidos
-    elif page == "fornecedor":
-        label = tk.Label(content_frame, text="Conteúdo da página de Consulta")
-        label.pack()
-        # Adicione aqui os widgets específicos para a página de consulta
-    # ... outras páginas
-
-try:
-    imagem_logo = Image.open("cimed.png")  # Substitua pelo caminho da sua imagem
-    imagem_logo = imagem_logo.resize((20, 50), Image.LANCZOS) #Redimensiona a imagem para não ficar muito grande
-    imagem_logo = ImageTk.PhotoImage(imagem_logo)
-except FileNotFoundError:
-    print("Erro: Imagem não encontrada.")
-    imagem_logo = None
-# Botões do menu
-logo_cimed = tk.Image('imagem_logo')
-
-botao_pedidos = tk.Button(menu_frame, text="Consulta Por Pedidos", command=lambda: show_page("pedidos"),width=20)
-botao_pedidos.pack(pady=5, padx=10)
-botao_fornecedor = tk.Button(menu_frame, text="Consulta Por Fornecedor", command=lambda: show_page("fornecedor"),width=20)
-botao_fornecedor.pack(pady=5,padx=10)
-# ... outros botões
-
-show_page("pedidos") # Mostra a página inicial
-root.update()
-root.mainloop()
+if __name__ == "__main__":
+    caminho_arquivo = "base teste.xlsx"
+    df = carregar_planilha(caminho_arquivo)
+    
+    fornecedores = fornecedores_com_follow_up(df)
+    print("Fornecedores com itens para follow-up:")
+    for fornecedor in fornecedores:
+        print(fornecedor)
+    
+    fornecedor_desejado = input("Digite o nome do fornecedor para ver os materiais: ")
+    df_filtrado = filtrar_materiais_por_fornecedor(df, fornecedor_desejado)
+    
+    if df_filtrado.empty:
+        print("Nenhum material encontrado para follow-up deste fornecedor.")
+    else:
+        texto_final = gerar_texto_follow_up(df_filtrado)
+        print("Materiais para follow-up:\n")
+        print(texto_final)
