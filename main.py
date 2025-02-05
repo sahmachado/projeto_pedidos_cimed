@@ -73,27 +73,50 @@ class limpar_campos:
 
 class processarpedido:
     def atualizar_pedido():
+        def editar(codigo):
+            arquivo = load_workbook('base teste.xlsx')
+            aba_atual = arquivo.active
+            for linha, linha_dados in enumerate(aba_atual.iter_rows(min_row=1), start=1):
+                if linha_dados[0].value == int(codigo): # Verifica apenas a primeira célula da linha
+                    aba_atual.cell(linha,column=7).value = comprador.get()
+                    aba_atual.cell(linha,column=8).value = remessa.get()
+                    aba_atual.cell(linha,column=10).value = follow_up.get()
+                    arquivo.save('base teste.xlsx')
+                    break
+        def escolha(pedido,codigo):
+            if var_editar.get():
+                base = pd.read_excel('base teste.xlsx',sheet_name='base',dtype = {"Data de Remessa": "datetime64[ns]", "Data do Pedido": "datetime64[ns]"})
+                itens_pedido = base.loc[base['Pedido'] ==  int(pedido), 'Item'].tolist()
+                itens = []
+                for item in itens_pedido:
+                    itens.append(int(float(item)))
+                itens.sort()
+                for item in itens:
+                    codigo = processarpedido.gerar_codigo(pedido,item)
+                    editar(codigo)
+                processarpedido.save_pedido
+                limpar_campos.limpar_pesquisa()
+            else:
+                editar(codigo)
+                limpar_campos.limpar_pesquisa()
+                processarpedido.save_pedido 
+        
         """Procura um valor na primeira coluna e retorna a linha."""
         pedido = num_pedido.get()
         item = item_combo.get()
         codigo = processarpedido.gerar_codigo(pedido,item)
         if pedido != '':
+            print(follow_up.cget("state"))
             if follow_up.cget("state") == "normal":
                 if follow_up.get() =='':
                     r =messagebox.askyesno('Follow-Up','O campo FOLLOW-UP está vazio, deseja continuar?')
                     follow_up.focus_set()
                     if r == True:
-                        arquivo = load_workbook('base teste.xlsx')
-                        aba_atual = arquivo.active
-                        for linha, linha_dados in enumerate(aba_atual.iter_rows(min_row=1), start=1):
-                            if linha_dados[0].value == int(codigo): # Verifica apenas a primeira célula da linha
-                                aba_atual.cell(linha,column=5).value = comprador.get()
-                                aba_atual.cell(linha,column=6).value = remessa.get()
-                                aba_atual.cell(linha,column=8).value = follow_up.get()
-                                arquivo.save('base teste.xlsx')
-                                limpar_campos.limpar_pesquisa()
-                                processarpedido.save_pedido
-                                break
+                        escolha(pedido,codigo)
+                        processarpedido.save_pedido
+                else:
+                    escolha(pedido,codigo)
+                    processarpedido.save_pedido
             else:
                 messagebox.showwarning("Erro", "Habilite o modo edição")
         else: 
@@ -110,6 +133,7 @@ class processarpedido:
         return status
 
     def gerar_codigo(pedido,item):
+        print(type(pedido))
         if pedido[:2] == '45':
             final_pedido = pedido[4:]
         elif pedido[:2] == '46':
@@ -479,7 +503,7 @@ class processarFornecedor:
 
 class paginas:
     def pagina_pedidos():
-        global num_pedido, material, item_combo, fornecedor,remessa,status,follow_up,modo_edicao,comprador,criacao,var
+        global num_pedido, material, item_combo, fornecedor,remessa,status,follow_up,modo_edicao,comprador,criacao,var,var_editar
         
         titulo = ttk.Label(content_frame, text='Consulta e Atualização de pedidos', font=("Arial", 15),background='#DCDAD5')
         titulo.grid(row=0, column=1,columnspan=2, padx=(15,5), pady=(15, 5))
@@ -528,7 +552,8 @@ class paginas:
         follow_up = ttk.Entry(content_frame, width=40)
         follow_up.grid(row=5, column=1,columnspan=1, padx=5, pady=5,sticky='nsew')
 
-        editar_massa = ttk.Checkbutton(content_frame,text='Editar pedido completo')
+        var_editar = tk.BooleanVar()
+        editar_massa = ttk.Checkbutton(content_frame,variable=var_editar,text='Editar pedido completo')
         editar_massa.grid(row=6,column=1,sticky='w')
 
         var = tk.BooleanVar()
